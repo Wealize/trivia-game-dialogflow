@@ -1,4 +1,4 @@
-# Vocento sincronización
+# Vocento-game sincronización
 
 ## Run
 
@@ -12,3 +12,9 @@ Para ejecutar el scrip:
 pipenv run python3 main.py
 ```
 
+## Tests
+
+Para ejecutar los tests:
+```bash
+pipenv run python3 -m pytest tests/ --disable-warnings
+```

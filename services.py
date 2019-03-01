@@ -88,7 +88,7 @@ class IntentsSyncronizer:
             ('input_contexts_response', [self.get_context_path(self.intent_parent + "-yes-followup")])
             ])
 
-    def get_context(self, context_name, lifespan_count):
+    def get_context(self, context_name, lifespan_count=None):
         return dialogflow.types.Context(
                 name=self.get_context_path(context_name),
                 lifespan_count=lifespan_count)
