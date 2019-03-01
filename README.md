@@ -1,7 +1,7 @@
 # Vocento sincronización
 
 ## Run
-Antes de todo:
+Antes de todo iniciar venv:
 ```bash
 source .venv/bin/activate
 ```
