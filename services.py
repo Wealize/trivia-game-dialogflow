@@ -81,6 +81,8 @@ class IntentsSyncronizer:
         return  ['incorrecto, la respuesta correcta es {} ¿quieres seguir jugando?'.format(response)]
 
     def get_contexts_for_intent(self, intent_name):
+        if not intent_name:
+            raise Exception('The intent name is empty')
         return dict(
             [('output_contexts_question', [ self.get_context(self.intent_parent + "-yes-followup", 2),
                 self.get_context(intent_name+"-followup", 2)]),
@@ -88,7 +90,7 @@ class IntentsSyncronizer:
             ('input_contexts_response', [self.get_context_path(self.intent_parent + "-yes-followup")])
             ])
 
-    def get_context(self, context_name, lifespan_count):
+    def get_context(self, context_name, lifespan_count=None):
         return dialogflow.types.Context(
                 name=self.get_context_path(context_name),
                 lifespan_count=lifespan_count)
