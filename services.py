@@ -81,6 +81,8 @@ class IntentsSyncronizer:
         return  ['incorrecto, la respuesta correcta es {} ¿quieres seguir jugando?'.format(response)]
 
     def get_contexts_for_intent(self, intent_name):
+        if(intent_name == ''):
+            raise Exception('The intent name is empty')
         return dict(
             [('output_contexts_question', [ self.get_context(self.intent_parent + "-yes-followup", 2),
                 self.get_context(intent_name+"-followup", 2)]),
