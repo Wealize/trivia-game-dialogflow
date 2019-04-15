@@ -44,7 +44,7 @@ class IntentsSyncronizer:
     def create_intents_for_question(self, intent):
         intent_parent_question_id = self.get_intent_id(self.intent_parent)
         question = intent[0]
-        correct_response = intent[1]
+        correct_response = ' '.join([intent[1], intent[2])
         intent_name = Formatter.format_intent_name(question)
         contexts = self.get_contexts_for_intent(intent_name)
 
