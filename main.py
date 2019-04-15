@@ -13,9 +13,9 @@ def main():
 
 
 def syncronize_intents():
+    creds = os.environ.get('DIALOGFLOW_CREDS')
     intents = get_intents()
-    intents_syncronizer = IntentsSyncronizer(
-        os.environ.get('PROJECT_ID'), INTENT_PARENT)
+    intents_syncronizer = IntentsSyncronizer(creds, INTENT_PARENT)
     intents_syncronizer.syncronize_intents(intents)
 
 

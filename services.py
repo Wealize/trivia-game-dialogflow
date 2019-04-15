@@ -4,11 +4,13 @@ import gspread
 import dialogflow
 import os
 
+
 class SpreadsheetReader:
     def __init__(self, key, credentials_file):
         SCOPE = ['https://spreadsheets.google.com/feeds',
-         'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, SCOPE)
+                 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            credentials_file, SCOPE)
         self.gspr = gspread.authorize(credentials)
         self.worksheet = self.get_first_sheet(key)
 
@@ -24,13 +26,19 @@ class SpreadsheetReader:
         values_list.pop(0)
         return values_list
 
+
 class IntentsSyncronizer:
-    def __init__(self, project_id, intent_parent):
-        self.project_id = project_id
-        self.intents_client = dialogflow.IntentsClient()
+    def __init__(self, dialogflow_creds, intent_parent):
+        self.credentials = service_account.Credentials.from_service_account_info(
+            dialogflow_creds)
+        self.project_id = self.credentials.project_id
+
+        self.intents_client = dialogflow.IntentsClient(
+            credentials=self.credentials)
         self.parent = self.intents_client.project_agent_path(self.project_id)
         self.intent_parent = intent_parent
-        self.default_user_expresion = ['si', 'claro', 'ok', 'vale', 'por supuesto', 'buena idea']
+        self.default_user_expresion = [
+            'si', 'claro', 'ok', 'vale', 'por supuesto', 'buena idea']
 
     def syncronize_intents(self, intents):
         self.delete_intents()
@@ -48,73 +56,79 @@ class IntentsSyncronizer:
         intent_name = Formatter.format_intent_name(question)
         contexts = self.get_contexts_for_intent(intent_name)
 
-        self.create_question_intent(contexts, intent_parent_question_id, intent_name, question)
+        self.create_question_intent(
+            contexts, intent_parent_question_id, intent_name, question)
         intent_parent_response_id = self.get_intent_id(intent_name)
-        self.create_correct_response(intent_parent_response_id, intent_name, contexts, correct_response)
-        self.create_incorrect_response(intent_parent_response_id, intent_name, contexts, correct_response)
+        self.create_correct_response(
+            intent_parent_response_id, intent_name, contexts, correct_response)
+        self.create_incorrect_response(
+            intent_parent_response_id, intent_name, contexts, correct_response)
 
     def create_question_intent(self, contexts, intent_parent_question_id, intent_name, question):
         self.create_intent(intent_name, self.default_user_expresion,
-            [question], intent_parent_question_id,
-                contexts.get('input_contexts_question'),
-                    contexts.get('output_contexts_question'))
+                           [question], intent_parent_question_id,
+                           contexts.get('input_contexts_question'),
+                           contexts.get('output_contexts_question'))
 
     def create_correct_response(self, intent_parent_response_id, intent_name, contexts,
-        correct_response):
+                                correct_response):
         self.create_response(intent_parent_response_id, intent_name+'-yes', [correct_response],
-            self.get_correct_response_messages(correct_response), contexts, correct_response)
+                             self.get_correct_response_messages(correct_response), contexts, correct_response)
 
     def create_incorrect_response(self, intent_parent_response_id, intent_name, contexts,
-        correct_response):
+                                  correct_response):
         self.create_response(intent_parent_response_id, intent_name+'-no', [''],
-            self.get_incorrect_response_messages(correct_response), contexts, correct_response)
+                             self.get_incorrect_response_messages(correct_response), contexts, correct_response)
 
     def create_response(self, intent_parent_response_id, intent_name, user_expresions, responses,
-        contexts, correct_response):
+                        contexts, correct_response):
         self.create_intent(intent_name, user_expresions, responses,
-                intent_parent_response_id, contexts.get('input_contexts_response'))
+                           intent_parent_response_id, contexts.get('input_contexts_response'))
 
     def get_correct_response_messages(self, response):
         return ['correcto, la respuesta correcta es {} ¿quieres seguir jugando?'.format(response)]
 
     def get_incorrect_response_messages(self, response):
-        return  ['incorrecto, la respuesta correcta es {} ¿quieres seguir jugando?'.format(response)]
+        return ['incorrecto, la respuesta correcta es {} ¿quieres seguir jugando?'.format(response)]
 
     def get_contexts_for_intent(self, intent_name):
         if not intent_name:
             raise Exception('The intent name is empty')
         return dict(
-            [('output_contexts_question', [ self.get_context(self.intent_parent + "-yes-followup", 2),
-                self.get_context(intent_name+"-followup", 2)]),
-            ('input_contexts_question', [self.get_context_path(self.intent_parent)]),
-            ('input_contexts_response', [self.get_context_path(self.intent_parent + "-yes-followup")])
-            ])
+            [('output_contexts_question', [self.get_context(self.intent_parent + "-yes-followup", 2),
+                                           self.get_context(intent_name+"-followup", 2)]),
+             ('input_contexts_question', [
+              self.get_context_path(self.intent_parent)]),
+             ('input_contexts_response', [self.get_context_path(
+                 self.intent_parent + "-yes-followup")])
+             ])
 
     def get_context(self, context_name, lifespan_count=None):
         return dialogflow.types.Context(
-                name=self.get_context_path(context_name),
-                lifespan_count=lifespan_count)
+            name=self.get_context_path(context_name),
+            lifespan_count=lifespan_count)
 
     def get_context_path(self, context_name):
         contexts_client = dialogflow.ContextsClient()
         return contexts_client.context_path(self.project_id, "-", context_name)
 
     def create_intent(self, display_name, training_phrases_parts,
-                  message_texts, intent_parent_id, input_contexts=None, output_contexts=None):
+                      message_texts, intent_parent_id, input_contexts=None, output_contexts=None):
         intent = self.get_intent(display_name, training_phrases_parts,
-                  message_texts, intent_parent_id, input_contexts, output_contexts)
+                                 message_texts, intent_parent_id, input_contexts, output_contexts)
 
         response = self.intents_client.create_intent(self.parent, intent)
 
         print('Intent created: {}'.format(response))
 
     def get_intent(self, display_name, training_phrases_parts,
-                  message_texts, intent_parent_id, input_contexts=None, output_contexts=None):
+                   message_texts, intent_parent_id, input_contexts=None, output_contexts=None):
         intent = dialogflow.types.Intent(
             display_name=display_name,
             training_phrases=self.get_training_phrases(training_phrases_parts),
             messages=[self.get_message(self.get_text_message(message_texts))],
-            parent_followup_intent_name=self.get_parent_followup_intent_name(intent_parent_id),
+            parent_followup_intent_name=self.get_parent_followup_intent_name(
+                intent_parent_id),
             input_context_names=input_contexts,
             output_contexts=output_contexts)
         return intent
@@ -150,11 +164,12 @@ class IntentsSyncronizer:
     def is_game_intent(self, intent):
         contexts_client = dialogflow.ContextsClient()
         return contexts_client.context_path(self.project_id, "-",
-            self.intent_parent) in intent.input_context_names
+                                            self.intent_parent) in intent.input_context_names
 
     def delete_intent(self, intent):
         intent_id = self.get_intent_id(intent.display_name)
-        intent_path = self.intents_client.intent_path(self.project_id, intent_id)
+        intent_path = self.intents_client.intent_path(
+            self.project_id, intent_id)
         self.intents_client.delete_intent(intent_path)
 
     def get_intent_id(self, display_name):
@@ -169,10 +184,11 @@ class IntentsSyncronizer:
 
         return intent_ids[0]
 
+
 class Formatter():
     @staticmethod
     def format_intent_name(question):
         question = question.replace(" ", "")
-        incorrect_letters,correct_letters = 'áéíóúü','aeiouu'
-        trans = str.maketrans(incorrect_letters,correct_letters)
+        incorrect_letters, correct_letters = 'áéíóúü', 'aeiouu'
+        trans = str.maketrans(incorrect_letters, correct_letters)
         return question.translate(trans)
