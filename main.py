@@ -1,6 +1,5 @@
 import os
 import json
-from pprint import pprint
 
 from services import SpreadsheetReader, IntentsSyncronizer
 
@@ -15,6 +14,9 @@ def main():
 def syncronize_intents():
     creds = json.loads(os.environ.get('DIALOGFLOW_CREDS'))
     intents = get_intents()
+
+    print('Intents: {}'.format(len(intents)))
+
     intents_syncronizer = IntentsSyncronizer(creds, INTENT_PARENT)
     intents_syncronizer.syncronize_intents(intents)
 
