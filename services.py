@@ -28,13 +28,10 @@ class SpreadsheetReader:
 
 
 class IntentsSyncronizer:
-    def __init__(self, dialogflow_creds, intent_parent):
-        self.credentials = service_account.Credentials.from_service_account_info(
-            dialogflow_creds)
-        self.project_id = self.credentials.project_id
+    def __init__(self, project_id, intent_parent):
+        self.project_id = project_id
 
-        self.intents_client = dialogflow.IntentsClient(
-            credentials=self.credentials)
+        self.intents_client = dialogflow.IntentsClient()
         self.parent = self.intents_client.project_agent_path(self.project_id)
         self.intent_parent = intent_parent
         self.default_user_expresion = [

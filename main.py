@@ -12,12 +12,17 @@ def main():
 
 
 def syncronize_intents():
-    creds = json.loads(os.environ.get('DIALOGFLOW_CREDS'))
+    creds = os.environ.get('DIALOGFLOW_CREDS')
+    f = open(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'), 'a')
+    f.write(creds)
+    f.close()
+
     intents = get_intents()
 
     print('Intents: {}'.format(len(intents)))
 
-    intents_syncronizer = IntentsSyncronizer(creds, INTENT_PARENT)
+    intents_syncronizer = IntentsSyncronizer(
+        os.environ.get('PROJECT_ID'), INTENT_PARENT)
     intents_syncronizer.syncronize_intents(intents)
 
 
