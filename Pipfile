@@ -14,6 +14,8 @@ responses = "==0.10.4"
 pylint = "*"
 "oauth2client" = "*"
 pyOpenSSL = "*"
+flask = "*"
+gunicorn = "*"
 
 [dev-packages]
 
