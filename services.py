@@ -6,11 +6,11 @@ import os
 
 
 class SpreadsheetReader:
-    def __init__(self, key, credentials_file):
+    def __init__(self, key, credentials):
         SCOPE = ['https://spreadsheets.google.com/feeds',
                  'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            credentials_file, SCOPE)
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+            credentials, SCOPE)
         self.gspr = gspread.authorize(credentials)
         self.worksheet = self.get_first_sheet(key)
 

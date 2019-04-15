@@ -1,8 +1,8 @@
-from services import SpreadsheetReader
-from services import IntentsSyncronizer
 import os
 import json
 from pprint import pprint
+
+from services import SpreadsheetReader, IntentsSyncronizer
 
 # name of the intent that starts the game
 INTENT_PARENT = 'game'
@@ -13,7 +13,7 @@ def main():
 
 
 def syncronize_intents():
-    creds = os.environ.get('DIALOGFLOW_CREDS')
+    creds = json.loads(os.environ.get('DIALOGFLOW_CREDS'))
     intents = get_intents()
     intents_syncronizer = IntentsSyncronizer(creds, INTENT_PARENT)
     intents_syncronizer.syncronize_intents(intents)
@@ -21,9 +21,9 @@ def syncronize_intents():
 
 def get_intents():
     key = os.environ.get('KEY')
-    credentials_file = os.environ.get('SHEET_CREDENTIALS_FILE')
+    credentials = json.loads(os.environ.get('SHEETS_CREDS'))
 
-    reader = SpreadsheetReader(key, credentials_file)
+    reader = SpreadsheetReader(key, credentials)
     return reader.get_values_from_sheet()
 
 
