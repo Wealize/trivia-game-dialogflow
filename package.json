@@ -1,0 +1,25 @@
+{
+  "name": "vocento-game",
+  "version": "1.0.0",
+  "description": "## Run",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheNeonProject/vocento-game.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TheNeonProject/vocento-game/issues"
+  },
+  "homepage": "https://github.com/TheNeonProject/vocento-game#readme",
+  "dependencies": {
+    "googleapis": "^27.0.0"
+  }
+}
