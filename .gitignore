@@ -1,3 +1,5 @@
 __pycache__/
 creds.json
 spreadsheet-vocento.json
+node_modules
+*.pyc

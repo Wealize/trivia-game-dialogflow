@@ -12,7 +12,7 @@ def sync():
     token = request.args.get('token')
 
     if not token or os.environ.get('TOKEN') != token:
-        return
+        return 'Forbidden'
 
     syncronize_intents()
     return "Sincronización completada con éxito"
