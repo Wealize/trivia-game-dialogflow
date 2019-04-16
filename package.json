@@ -20,6 +20,10 @@
   },
   "homepage": "https://github.com/TheNeonProject/vocento-game#readme",
   "dependencies": {
+    "dialogflow": "^0.8.2",
     "googleapis": "^27.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0"
   }
 }
