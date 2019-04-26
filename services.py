@@ -56,6 +56,7 @@ class IntentsSyncronizer:
         intent_parent_question_id = self.get_intent_id(self.intent_parent)
         question = intent[0]
         correct_response = ' '.join([intent[1], intent[2]])
+        incorrect_response = intent[1]
         intent_name = Formatter.format_intent_name(question)
         contexts = self.get_contexts_for_intent(intent_name)
 
@@ -65,7 +66,7 @@ class IntentsSyncronizer:
         self.create_correct_response(
             intent_parent_response_id, intent_name, contexts, correct_response)
         self.create_incorrect_response(
-            intent_parent_response_id, intent_name, contexts, correct_response)
+            intent_parent_response_id, intent_name, contexts, incorrect_response)
 
     def create_question_intent(self, contexts, intent_parent_question_id, intent_name, question):
         self.create_intent(intent_name, self.default_user_expresion,
