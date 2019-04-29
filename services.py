@@ -130,8 +130,9 @@ class IntentsSyncronizer:
         if not intent_name:
             raise Exception('The intent name is empty')
         return dict(
-            [('output_contexts_question', [self.get_context(self.intent_parent + "-yes-followup", 2),
-                                           self.get_context(intent_name+"-followup", 2)]),
+            [('output_contexts_question', [
+                self.get_context("{}-yes-followup".format(self.intent_parent), 1),
+                self.get_context("{}-followup".format(intent_name), 1)]),
              ('input_contexts_question', [
               self.get_context_path(self.intent_parent)]),
              ('input_contexts_response', [self.get_context_path(
@@ -153,7 +154,8 @@ class IntentsSyncronizer:
             training_phrases=self.get_training_phrases(training_phrases_parts),
             messages=[
                 dialogflow.types.Intent.Message(
-                    text=dialogflow.types.Intent.Message.Text(text=message_texts)
+                    text=dialogflow.types.Intent.Message.Text(
+                        text=message_texts)
                 )
             ],
             parent_followup_intent_name="projects/{}/agent/intents/{}".format(
@@ -169,7 +171,8 @@ class IntentsSyncronizer:
         for training_phrases_part in training_phrases_parts:
             part = dialogflow.types.Intent.TrainingPhrase.Part(
                 text=training_phrases_part)
-            training_phrase = dialogflow.types.Intent.TrainingPhrase(parts=[part])
+            training_phrase = dialogflow.types.Intent.TrainingPhrase(
+                parts=[part])
             training_phrases.append(training_phrase)
         return training_phrases
 
@@ -186,7 +189,8 @@ class IntentsSyncronizer:
 
     def delete_intent(self, intent):
         intent_id = intent.name.split('/')[-1]
-        intent_path = self.intents_client.intent_path(self.project_id, intent_id)
+        intent_path = self.intents_client.intent_path(
+            self.project_id, intent_id)
         self.intents_client.delete_intent(intent_path)
 
     def get_intent_id(self, display_name):

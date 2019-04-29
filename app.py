@@ -58,9 +58,6 @@ def webhook():
 
     questions = persist_service.get_questions()
     question = QuestionService(questions).get_question()
-
-    print(request_dialogflow)
-    print(session_id)
     new_context = "projects/{}/agent/sessions/{}/contexts/{}".format(
         project_id, session_id, question['context'])
 
@@ -92,7 +89,7 @@ def webhook():
             "outputContexts": [
                 {
                     "name": new_context,
-                    "lifespanCount": 5,
+                    "lifespanCount": 1,
                     "parameters": {}
                 }
             ]
