@@ -16,6 +16,9 @@ pylint = "*"
 pyOpenSSL = "*"
 flask = "*"
 gunicorn = "*"
+autopep8 = "*"
+awesome-slugify = "*"
+redis = "*"
 
 [dev-packages]
 

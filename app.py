@@ -1,45 +1,80 @@
 import os
+import json
+from functools import wraps
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
+from werkzeug.exceptions import Unauthorized
+from slugify import slugify
 
-from main import syncronize_intents
+from services import (QuestionService, PersistService,
+                      SpreadsheetReader, IntentsSyncronizer)
 
+INTENT_PARENT = 'game'
+TOKEN = os.environ.get('TOKEN')
 app = Flask(__name__)
+persist_service = PersistService(os.environ.get('REDIS_URL'))
+intents_syncronizer = IntentsSyncronizer(
+    json.loads(os.environ.get('DIALOGFLOW_CREDS')),
+    INTENT_PARENT
+)
+
+
+def check_authentication(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.args.get('token')
+
+        if not token or TOKEN != token:
+            raise Unauthorized()
+
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.route("/sync")
+@check_authentication
 def sync():
-    token = request.args.get('token')
+    spreadsheet_id = os.environ.get('SPREADSHEET_ID')
+    credentials = json.loads(os.environ.get('SPREADSHEET_CREDENTIALS'))
 
-    if not token or os.environ.get('TOKEN') != token:
-        return 'Forbidden'
+    reader = SpreadsheetReader(spreadsheet_id, credentials)
+    intents = reader.get_values_from_sheet()
+    questions = [
+        { 'text': intent[0], 'context': slugify(intent[0], to_lower=True) }
+        for intent in intents
+    ]
+    persist_service.set_questions(questions)
+    intents_syncronizer.syncronize_intents(intents)
 
-    syncronize_intents()
     return "Sincronización completada con éxito"
 
 
 @app.route("/hook", methods=['POST'])
+@check_authentication
 def webhook():
-    token = request.args.get('token')
-
-    if not token or os.environ.get('TOKEN') != token:
-        return 'Forbidden'
-
     request_dialogflow = request.get_json()
     session_id = request_dialogflow['session'].split('/')[-1]
+    project_id = intents_syncronizer.project_id
+
+    questions = persist_service.get_questions()
+    question = QuestionService(questions).get_question()
+
     print(request_dialogflow)
     print(session_id)
+    new_context = "projects/{}/agent/sessions/{}/contexts/{}".format(
+        project_id, session_id, question['context'])
+
     return jsonify(
         {
-            "fulfillmentText": "Holiiii",
+            "fulfillmentText": question['text'],
             "fulfillmentMessages": [
                 {
                     "text": {
-                        "text": ["Mi respuestica"]
+                        "text": [question['text']]
                     }
                 }
             ],
-            "source": "vocento.com",
+            "source": "abc.theneonproject.org",
             "payload": {
                 "google": {
                     "expectUserResponse": True,
@@ -47,7 +82,7 @@ def webhook():
                         "items": [
                             {
                                 "simpleResponse": {
-                                    "textToSpeech": "Esto es una respuesta simple"
+                                    "textToSpeech": question['text']
                                 }
                             }
                         ]
@@ -56,7 +91,7 @@ def webhook():
             },
             "outputContexts": [
                 {
-                    "name": "projects/vocento-staging/agent/sessions/{}/contexts/pliki".format(session_id),
+                    "name": new_context,
                     "lifespanCount": 5,
                     "parameters": {}
                 }
