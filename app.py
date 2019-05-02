@@ -1,34 +1,18 @@
 import os
 import json
-from functools import wraps
 
 from flask import Flask, request, jsonify, g
-from werkzeug.exceptions import Unauthorized
 from slugify import slugify
 
 from services import (QuestionService, PersistService,
                       SpreadsheetReader, IntentsSyncronizer)
+from middleware import check_authentication
+
 
 INTENT_PARENT = 'game'
-TOKEN = os.environ.get('TOKEN')
+PROJECT_ID = os.environ.get('PROJECT_ID')
 app = Flask(__name__)
 persist_service = PersistService(os.environ.get('REDIS_URL'))
-intents_syncronizer = IntentsSyncronizer(
-    json.loads(os.environ.get('DIALOGFLOW_CREDS')),
-    INTENT_PARENT
-)
-
-
-def check_authentication(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        token = request.args.get('token')
-
-        if not token or TOKEN != token:
-            raise Unauthorized()
-
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 @app.route("/sync")
@@ -48,7 +32,6 @@ def sync():
         for intent in intents
     ]
     persist_service.set_questions(questions)
-    # intents_syncronizer.syncronize_intents(intents)
 
     return "Sincronización completada con éxito"
 
@@ -59,7 +42,7 @@ def webhook():
     request_dialogflow = request.get_json()
     print(request_dialogflow)
     session_id = request_dialogflow['session'].split('/')[-1]
-    project_id = intents_syncronizer.project_id
+    project_id = PROJECT_ID
     request_text = request_dialogflow['queryResult']['queryText']
 
     questions = persist_service.get_questions()
