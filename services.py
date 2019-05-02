@@ -29,6 +29,9 @@ class QuestionService:
     CORRECT_QUESTION_FORMAT = 'Correcto! , {} {} ¿Quieres volver a jugar?'
     INCORRECT_QUESTION_FORMAT = 'Incorrecto, la respuesta correcta es: {}, ¿Quieres volver a jugar?'
     FINISH_GAME_SENTENCES = ['no']
+    FINISH_GAME_RESPONSE = 'Muchas gracias por jugar!'
+    SOURCE = 'abc.theneonproject.org'
+    MINIMUM_TEXT_CHARS_RESPONSE = 3
 
     def __init__(self, project_id, session_id, questions):
         self.project_id = project_id
@@ -46,56 +49,57 @@ class QuestionService:
         )
 
     def get_question_from_context(self, contexts, new_context):
-        question_object = None
+        question_context = next(
+            (context['parameters']['question'] for context in contexts
+             if context['name'] == new_context),
+            None
+        )
 
-        for context in contexts:
-            if context['name'] == new_context:
-                question_context = context['parameters']['question']
-
-                for question in self.questions:
-                    if question['context'] == question_context:
-                        question_object = question
-
-        return question_object
+        return next(
+            (question for question in self.questions
+             if question['context'] == question_context),
+            None
+        )
 
     def get_response_to_question(self, text, question_object):
-        if text in question_object['correct_response']:
+        response = self.INCORRECT_QUESTION_FORMAT.format(
+            question_object['correct_response'])
+
+        if len(text) > self.MINIMUM_TEXT_CHARS_RESPONSE and \
+           text in question_object['correct_response']:
             response = self.CORRECT_QUESTION_FORMAT.format(
                 question_object['correct_response'],
                 question_object['description']
             )
-        else:
-            response = self.INCORRECT_QUESTION_FORMAT.format(
-                question_object['correct_response'])
 
         return response
 
     def get_dialogflow_response(self, response, question, contexts):
         return {
-            "fulfillmentText": response,
-            "fulfillmentMessages": [
+            'fulfillmentText': response,
+            'fulfillmentMessages': [
                 {
-                    "text": {
-                        "text": [response]
+                    'text': {
+                        'text': [response]
                     }
                 }
             ],
-            "source": "abc.theneonproject.org",
-            "payload": {
-                "google": {
-                    "expectUserResponse": True,
-                    "richResponse": {
-                        "items": [
+            'source': self.SOURCE,
+            'payload': {
+                'google': {
+                    'expectUserResponse': True,
+                    'richResponse': {
+                        'items': [
                             {
-                                "simpleResponse": {
-                                    "textToSpeech": question['text']
+                                'simpleResponse': {
+                                    'textToSpeech': question['text']
                                 }
                             }
                         ]
                     }
                 }
             },
-            "outputContexts": contexts
+            'outputContexts': contexts
         }
 
 

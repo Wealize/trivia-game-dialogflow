@@ -29,14 +29,17 @@ def sync():
 @check_authentication
 def webhook():
     request_dialogflow = request.get_json()
-    print(request_dialogflow)
-    session_id = request_dialogflow['session'].split('/')[-1]
-    request_text = request_dialogflow['queryResult']['queryText']
+
+    try:
+        session_id = request_dialogflow['session'].split('/')[-1]
+        request_text = request_dialogflow['queryResult']['queryText']
+    except (KeyError, IndexError):
+        return 'Not a valid Dialogflow webhook payload', 400
+
     questions = persist_service.get_questions()
     question_service = QuestionService(PROJECT_ID, session_id, questions)
 
-    # TODO Save questions already answered on session
-    question = question_service.get_question()
+    next_question = question_service.get_question()
     new_context = question_service.get_context('question')
     game_context = question_service.get_context('game')
     gamefollowup_context = question_service.get_context('game-followup')
@@ -44,6 +47,8 @@ def webhook():
         request_dialogflow['queryResult']['outputContexts'],
         new_context
     )
+
+    response = question_service.FINISH_GAME_RESPONSE
 
     if request_text in question_service.FINISH_GAME_SENTENCES:
         output_contexts = []
@@ -65,7 +70,7 @@ def webhook():
             response = question_service.get_response_to_question(
                 request_text, question_object)
         else:
-            response = question['text']
+            response = next_question['text']
             output_contexts = [
                 {
                     "name": game_context,
@@ -81,12 +86,12 @@ def webhook():
                     "name": new_context,
                     "lifespanCount": 1,
                     "parameters": {
-                        'question': question['context']
+                        'question': next_question['context']
                     }
                 }
             ]
 
     return jsonify(
         question_service.get_dialogflow_response(
-            response, question, output_contexts)
+            response, next_question, output_contexts)
     )
