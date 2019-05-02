@@ -5,3 +5,4 @@ spreadsheet-vocento.json
 node_modules
 *.pyc
 launch.sh
+.coverage

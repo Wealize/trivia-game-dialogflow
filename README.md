@@ -16,5 +16,5 @@ pipenv run python3 main.py
 
 Para ejecutar los tests:
 ```bash
-pipenv run python3 -m pytest tests/ --disable-warnings
+pipenv run python3 -m pytest tests/ --cov=. --disable-warnings
 ```

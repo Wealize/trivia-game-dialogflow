@@ -19,6 +19,7 @@ gunicorn = "*"
 autopep8 = "*"
 awesome-slugify = "*"
 redis = "*"
+pytest-cov = "*"
 
 [dev-packages]
 

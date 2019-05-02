@@ -8,50 +8,109 @@ from oauth2client.service_account import ServiceAccountCredentials
 from slugify import slugify
 
 
-class PersistService:
-    QUESTIONS_KEY = 'abc:questions'
-
-    def __init__(self, url, db=0):
-        self.client = redis.from_url(url)
-
-    def set_questions(self, data):
-        self.client.set(self.QUESTIONS_KEY, json.dumps(data))
-
-    def get_questions(self):
-        try:
-            return json.loads(self.client.get(self.QUESTIONS_KEY))
-        except json.JSONDecodeError:
-            return []
-
-
-class QuestionService:
+class QuestionStateService:
     CONTEXT_PATTERN = 'projects/{}/agent/sessions/{}/contexts/{}'
-    CORRECT_QUESTION_FORMAT = 'Correcto! , {} {} ¿Quieres volver a jugar?'
-    INCORRECT_QUESTION_FORMAT = 'Incorrecto, la respuesta correcta es: {}, ¿Quieres volver a jugar?'
-    FINISH_GAME_SENTENCES = ['no']
-    FINISH_GAME_RESPONSE = 'Muchas gracias por jugar!'
     SOURCE = 'abc.theneonproject.org'
-    MINIMUM_TEXT_CHARS_RESPONSE = 3
 
-    def __init__(self, project_id, session_id, questions):
+    STATE_SEND_QUESTION = 'send_question'
+    STATE_ANSWER_QUESTION = 'answer_question'
+    STATE_FINISH_GAME = 'finish_game'
+
+    def __init__(self, project_id, session, contexts, questions, text):
         self.project_id = project_id
-        self.session_id = session_id
+        self.session = session
+        self.contexts = contexts
         self.questions = questions
+        self.text = text
+        self.question_service = QuestionService(self.session, self.questions)
 
-    def get_question(self):
-        return random.choice(self.questions)
+    def get_next_state_from_context(self):
+        if self.text in self.question_service.FINISH_GAME_SENTENCES:
+            return self.STATE_FINISH_GAME
 
-    def get_context(self, name):
-        return self.CONTEXT_PATTERN.format(
-            self.project_id,
-            self.session_id,
-            name
+        has_question = self.is_question_context_present()
+
+        if has_question:
+            return self.STATE_ANSWER_QUESTION
+
+        return self.STATE_SEND_QUESTION
+
+    def is_question_context_present(self):
+        return next(
+            (context for context in self.contexts
+             if context['name'] == self.get_context_path('question')),
+            None
         )
 
-    def get_question_from_context(self, contexts, new_context):
+    def get_next_response_from_request(self, next_state):
+        response = self.question_service.FINISH_GAME_RESPONSE
+
+        if next_state == self.STATE_ANSWER_QUESTION:
+            current_question = self.get_question_from_context()
+            return self.question_service.get_response_to_question(
+                self.text, current_question)
+
+        elif next_state == self.STATE_SEND_QUESTION:
+            next_question = self.question_service.get_question()
+            response = next_question['text']
+
+        return response
+
+    def get_next_context_from_request(self, next_state, next_question_intent=None):
+        question_context = self.get_context_path('question')
+        game_context = self.get_context_path('game')
+        gamefollowup_context = self.get_context_path('game-followup')
+        output_contexts = []
+
+        if next_state == self.STATE_ANSWER_QUESTION:
+            output_contexts = [
+                {
+                    "name": game_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+                {
+                    "name": gamefollowup_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+            ]
+        elif next_state == self.STATE_SEND_QUESTION:
+            output_contexts = [
+                {
+                    "name": game_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+                {
+                    "name": gamefollowup_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+                {
+                    "name": question_context,
+                    "lifespanCount": 1,
+                    "parameters": {
+                        'question': slugify(next_question_intent, to_lower=True)
+                    }
+                }
+            ]
+
+        return output_contexts
+
+    def get_next_response(self):
+        next_state = self.get_next_state_from_context()
+        next_response = self.get_next_response_from_request(next_state)
+        next_contexts = self.get_next_context_from_request(
+            next_state, next_response)
+
+        return self.get_dialogflow_response(next_response, next_contexts)
+
+    def get_question_from_context(self):
+        question_context_path = self.get_context_path('question')
         question_context = next(
-            (context['parameters']['question'] for context in contexts
-             if context['name'] == new_context),
+            (context['parameters']['question'] for context in self.contexts
+             if context['name'] == question_context_path),
             None
         )
 
@@ -61,20 +120,7 @@ class QuestionService:
             None
         )
 
-    def get_response_to_question(self, text, question_object):
-        response = self.INCORRECT_QUESTION_FORMAT.format(
-            question_object['correct_response'])
-
-        if len(text) > self.MINIMUM_TEXT_CHARS_RESPONSE and \
-           text in question_object['correct_response']:
-            response = self.CORRECT_QUESTION_FORMAT.format(
-                question_object['correct_response'],
-                question_object['description']
-            )
-
-        return response
-
-    def get_dialogflow_response(self, response, question, contexts):
+    def get_dialogflow_response(self, response, contexts):
         return {
             'fulfillmentText': response,
             'fulfillmentMessages': [
@@ -92,7 +138,7 @@ class QuestionService:
                         'items': [
                             {
                                 'simpleResponse': {
-                                    'textToSpeech': question['text']
+                                    'textToSpeech': response
                                 }
                             }
                         ]
@@ -101,6 +147,56 @@ class QuestionService:
             },
             'outputContexts': contexts
         }
+
+    def get_context_path(self, name):
+        return self.CONTEXT_PATTERN.format(self.project_id, self.session, name)
+
+
+class PersistService:
+    QUESTIONS_KEY = 'abc:questions'
+
+    def __init__(self, url, db=0):
+        self.client = redis.from_url(url)
+
+    def set_questions(self, data):
+        self.client.set(self.QUESTIONS_KEY, json.dumps(data))
+
+    def get_questions(self):
+        try:
+            return json.loads(self.client.get(self.QUESTIONS_KEY))
+        except json.JSONDecodeError:
+            return []
+
+
+class QuestionService:
+    CORRECT_QUESTION_FORMAT = 'Correcto! , {} {} ¿Quieres volver a jugar?'
+    INCORRECT_QUESTION_FORMAT = 'Incorrecto, la respuesta correcta es: {}, ¿Quieres volver a jugar?'
+    FINISH_GAME_SENTENCES = ['no', 'cancelar']
+    FINISH_GAME_RESPONSE = 'Muchas gracias por jugar!'
+    MINIMUM_TEXT_CHARS_RESPONSE = 3
+
+    def __init__(self, session_id, questions):
+        self.session_id = session_id
+        self.questions = questions
+
+    def get_question(self):
+        return random.choice(self.questions)
+
+    def get_response_to_question(self, text, question_object):
+        response = self.INCORRECT_QUESTION_FORMAT.format(
+            question_object['correct_response'])
+
+        if self.is_valid_answer(text, question_object['correct_response']):
+            response = self.CORRECT_QUESTION_FORMAT.format(
+                question_object['correct_response'],
+                question_object['description']
+            )
+
+        return response
+
+    def is_valid_answer(self, text, correct_response):
+        return len(text) > self.MINIMUM_TEXT_CHARS_RESPONSE and \
+            text in correct_response
 
 
 class SpreadsheetReader:
