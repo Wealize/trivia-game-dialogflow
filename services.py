@@ -28,6 +28,7 @@ class QuestionService:
     CONTEXT_PATTERN = 'projects/{}/agent/sessions/{}/contexts/{}'
     CORRECT_QUESTION_FORMAT = 'Correcto! , {} {} ¿Quieres volver a jugar?'
     INCORRECT_QUESTION_FORMAT = 'Incorrecto, la respuesta correcta es: {}, ¿Quieres volver a jugar?'
+    FINISH_GAME_SENTENCES = ['no']
 
     def __init__(self, project_id, session_id, questions):
         self.project_id = project_id

@@ -38,35 +38,53 @@ def webhook():
     # TODO Save questions already answered on session
     question = question_service.get_question()
     new_context = question_service.get_context('question')
+    game_context = question_service.get_context('game')
+    gamefollowup_context = question_service.get_context('game-followup')
     question_object = question_service.get_question_from_context(
         request_dialogflow['queryResult']['outputContexts'],
         new_context
     )
 
-    if question_object:
-        new_context = "projects/{}/agent/sessions/{}/contexts/{}".format(
-            PROJECT_ID, session_id, 'game')
-        output_contexts = [
-            {
-                "name": new_context,
-                "lifespanCount": 1,
-                "parameters": {}
-            }
-        ]
-
-        response = question_service.get_response_to_question(
-            request_text, question_object)
+    if request_text in question_service.FINISH_GAME_SENTENCES:
+        output_contexts = []
     else:
-        response = question['text']
-        output_contexts = [
-            {
-                "name": new_context,
-                "lifespanCount": 1,
-                "parameters": {
-                    'question': question['context']
+        if question_object:
+            output_contexts = [
+                {
+                    "name": game_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+                {
+                    "name": gamefollowup_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+            ]
+
+            response = question_service.get_response_to_question(
+                request_text, question_object)
+        else:
+            response = question['text']
+            output_contexts = [
+                {
+                    "name": game_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+                {
+                    "name": gamefollowup_context,
+                    "lifespanCount": 1,
+                    "parameters": {}
+                },
+                {
+                    "name": new_context,
+                    "lifespanCount": 1,
+                    "parameters": {
+                        'question': question['context']
+                    }
                 }
-            }
-        ]
+            ]
 
     return jsonify(
         question_service.get_dialogflow_response(
