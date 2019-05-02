@@ -126,3 +126,54 @@ class QuestionStateServiceTestCase(unittest.TestCase):
             self.service.STATE_ANSWER_QUESTION)
 
         self.assertEqual(response, expected_response)
+
+    def test_get_question_from_context_notfound(self):
+        self.service.contexts = []
+
+        question = self.service.get_question_from_context()
+
+        self.assertFalse(question)
+
+    def test_get_question_from_context_found_question(self):
+        self.service.contexts = [
+            {'name': self.service.get_context_path('question'),
+             'parameters': {'question': self.questions[0]['context']}
+             }
+        ]
+
+        question = self.service.get_question_from_context()
+
+        self.assertTrue(question)
+
+
+    def test_get_next_context_from_request_finish_state(self):
+        next_state = self.service.STATE_FINISH_GAME
+
+        context = self.service.get_next_context_from_request(next_state)
+
+        self.assertFalse(context)
+
+    def test_get_next_context_from_request_send_question_state(self):
+        next_state = self.service.STATE_SEND_QUESTION
+        expected_contexts_length = 3
+
+        contexts = self.service.get_next_context_from_request(
+            next_state, self.questions[0]['text'])
+
+        self.assertEqual(len(contexts), expected_contexts_length)
+
+    def test_get_next_context_from_request_answer_question_state(self):
+        next_state = self.service.STATE_ANSWER_QUESTION
+        expected_contexts_length = 2
+
+        contexts = self.service.get_next_context_from_request(next_state)
+
+        self.assertEqual(len(contexts), expected_contexts_length)
+
+    def test_get_context_path(self):
+        context = 'mycontext'
+        expected_result = 'projects/myproject_id/agent/sessions/mysessionid/contexts/{}'.format(context)
+
+        context_path = self.service.get_context_path(context)
+
+        self.assertEqual(context_path, expected_result)

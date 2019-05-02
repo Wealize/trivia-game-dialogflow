@@ -56,7 +56,7 @@ class QuestionStateService:
 
         return response
 
-    def get_next_context_from_request(self, next_state, next_question_intent=None):
+    def get_next_context_from_request(self, next_state, next_question_context=None):
         question_context = self.get_context_path('question')
         game_context = self.get_context_path('game')
         gamefollowup_context = self.get_context_path('game-followup')
@@ -91,7 +91,7 @@ class QuestionStateService:
                     "name": question_context,
                     "lifespanCount": 1,
                     "parameters": {
-                        'question': slugify(next_question_intent, to_lower=True)
+                        'question': slugify(next_question_context, to_lower=True)
                     }
                 }
             ]
