@@ -4,7 +4,7 @@ import json
 from flask import Flask, request, jsonify, g
 from slugify import slugify
 
-from services import QuestionService, PersistService, SpreadsheetReader
+from services import QuestionStateService, PersistService, SpreadsheetReader
 from middleware import check_authentication
 
 
@@ -22,6 +22,7 @@ def sync():
     reader = SpreadsheetReader(SPREADSHEET_ID, CREDENTIALS)
     questions = reader.get_values_from_sheet()
     persist_service.set_questions(questions)
+
     return "Sincronización completada con éxito"
 
 
@@ -33,65 +34,17 @@ def webhook():
     try:
         session_id = request_dialogflow['session'].split('/')[-1]
         request_text = request_dialogflow['queryResult']['queryText']
+        request_contexts = request_dialogflow['queryResult']['outputContexts']
     except (KeyError, IndexError):
         return 'Not a valid Dialogflow webhook payload', 400
 
     questions = persist_service.get_questions()
-    question_service = QuestionService(PROJECT_ID, session_id, questions)
-
-    next_question = question_service.get_question()
-    new_context = question_service.get_context('question')
-    game_context = question_service.get_context('game')
-    gamefollowup_context = question_service.get_context('game-followup')
-    question_object = question_service.get_question_from_context(
-        request_dialogflow['queryResult']['outputContexts'],
-        new_context
+    question_state = QuestionStateService(
+        os.environ.get('PROJECT_ID'),
+        session_id,
+        request_contexts,
+        questions,
+        request_text
     )
 
-    response = question_service.FINISH_GAME_RESPONSE
-
-    if request_text in question_service.FINISH_GAME_SENTENCES:
-        output_contexts = []
-    else:
-        if question_object:
-            output_contexts = [
-                {
-                    "name": game_context,
-                    "lifespanCount": 1,
-                    "parameters": {}
-                },
-                {
-                    "name": gamefollowup_context,
-                    "lifespanCount": 1,
-                    "parameters": {}
-                },
-            ]
-
-            response = question_service.get_response_to_question(
-                request_text, question_object)
-        else:
-            response = next_question['text']
-            output_contexts = [
-                {
-                    "name": game_context,
-                    "lifespanCount": 1,
-                    "parameters": {}
-                },
-                {
-                    "name": gamefollowup_context,
-                    "lifespanCount": 1,
-                    "parameters": {}
-                },
-                {
-                    "name": new_context,
-                    "lifespanCount": 1,
-                    "parameters": {
-                        'question': next_question['context']
-                    }
-                }
-            ]
-
-    return jsonify(
-        question_service.get_dialogflow_response(
-            response, next_question, output_contexts)
-    )
+    return jsonify(question_state.get_next_response())
