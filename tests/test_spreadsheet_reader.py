@@ -6,10 +6,10 @@ from services import SpreadsheetReader
 
 class SpreadsheetReaderTestCase(unittest.TestCase):
     @patch.object(SpreadsheetReader, '__init__')
-    def setUp(self, __init__):
+    def setUp(self, sheet_init):
         key = os.environ.get('KEY')
         credentials_file = os.environ.get('SHEET_CREDENTIALS_FILE')
-        __init__.return_value = None
+        sheet_init.return_value = None
 
         self.service = SpreadsheetReader(key, credentials_file)
 

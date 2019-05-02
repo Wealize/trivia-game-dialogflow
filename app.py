@@ -8,7 +8,6 @@ from services import QuestionStateService, PersistService, SpreadsheetReader
 from middleware import check_authentication
 
 
-INTENT_PARENT = 'game'
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SPREADSHEET_ID = os.environ.get('SPREADSHEET_ID')
 CREDENTIALS = json.loads(os.environ.get('SPREADSHEET_CREDENTIALS'))
