@@ -20,6 +20,8 @@ autopep8 = "*"
 awesome-slugify = "*"
 redis = "*"
 pytest-cov = "*"
+raven = "*"
+sentry-sdk = {extras = ["flask"],version = "==0.7.14"}
 
 [dev-packages]
 

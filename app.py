@@ -3,6 +3,8 @@ import json
 
 from flask import Flask, request, jsonify, g
 from slugify import slugify
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 from services import QuestionStateService, PersistService, SpreadsheetReader
 from middleware import check_authentication
@@ -11,6 +13,10 @@ from middleware import check_authentication
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SPREADSHEET_ID = os.environ.get('SPREADSHEET_ID')
 CREDENTIALS = json.loads(os.environ.get('SPREADSHEET_CREDENTIALS'))
+sentry_sdk.init(
+    dsn=os.environ.get('SENTRY_DSN'),
+    integrations=[FlaskIntegration()]
+)
 app = Flask(__name__)
 persist_service = PersistService(os.environ.get('REDIS_URL'))
 
