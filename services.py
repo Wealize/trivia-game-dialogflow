@@ -51,7 +51,8 @@ class QuestionStateService:
                 self.text, current_question)
 
         elif next_state == self.STATE_SEND_QUESTION:
-            next_question = self.question_service.get_question()
+            next_question = self.question_service.get_question(
+                self.get_questions_history())
             response = next_question['text']
 
         return response
@@ -76,6 +77,11 @@ class QuestionStateService:
                 },
             ]
         elif next_state == self.STATE_SEND_QUESTION:
+            history_context = self.get_context_path('question_history')
+            next_question_context = slugify(
+                next_question_context, to_lower=True)
+            questions_history = self.get_questions_history() + [next_question_context]
+
             output_contexts = [
                 {
                     "name": game_context,
@@ -91,12 +97,30 @@ class QuestionStateService:
                     "name": question_context,
                     "lifespanCount": 1,
                     "parameters": {
-                        'question': slugify(next_question_context, to_lower=True)
+                        'question': next_question_context
+                    }
+                },
+                {
+                    "name": history_context,
+                    "lifespanCount": 5,
+                    "parameters": {
+                        'questions': questions_history
                     }
                 }
             ]
 
         return output_contexts
+
+    def get_questions_history(self):
+        question_history_context_path = self.get_context_path(
+            'question_history')
+        questions_history = next(
+            (context['parameters']['questions'] for context in self.contexts
+             if context['name'] == question_history_context_path),
+            None
+        )
+
+        return questions_history or []
 
     def get_next_response(self):
         next_state = self.get_next_state_from_context()
@@ -179,8 +203,12 @@ class QuestionService:
         self.session_id = session_id
         self.questions = questions
 
-    def get_question(self):
-        return random.choice(self.questions)
+    def get_question(self, questions_history):
+        questions = list(filter(
+            lambda question: question['context'] not in questions_history,
+            self.questions
+        ))
+        return random.choice(questions)
 
     def get_response_to_question(self, text, question_object):
         response = self.INCORRECT_QUESTION_FORMAT.format(

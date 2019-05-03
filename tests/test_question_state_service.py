@@ -145,6 +145,24 @@ class QuestionStateServiceTestCase(unittest.TestCase):
 
         self.assertTrue(question)
 
+    def test_get_questions_history_notfound(self):
+        self.service.contexts = []
+
+        questions = self.service.get_questions_history()
+
+        self.assertFalse(questions)
+
+    def test_get_questions_history_valid_context(self):
+        self.service.contexts = [
+            {'name': self.service.get_context_path('question_history'),
+             'parameters': {'questions': ['question1']}
+             }
+        ]
+
+        question = self.service.get_questions_history()
+
+        self.assertTrue(question)
+
 
     def test_get_next_context_from_request_finish_state(self):
         next_state = self.service.STATE_FINISH_GAME
@@ -155,7 +173,7 @@ class QuestionStateServiceTestCase(unittest.TestCase):
 
     def test_get_next_context_from_request_send_question_state(self):
         next_state = self.service.STATE_SEND_QUESTION
-        expected_contexts_length = 3
+        expected_contexts_length = 4
 
         contexts = self.service.get_next_context_from_request(
             next_state, self.questions[0]['text'])

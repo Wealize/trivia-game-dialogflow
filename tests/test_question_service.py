@@ -24,11 +24,19 @@ class QuestionServiceTestCase(unittest.TestCase):
         ]
         self.service = QuestionService(self.session_id, self.questions)
 
-    def test_get_question_valid_result(self):
+    def test_get_question_valid_result_empty_history(self):
+        history_questions = []
 
-        question = self.service.get_question()
+        question = self.service.get_question(history_questions)
 
         self.assertIn(question, self.questions)
+
+    def test_get_question_valid_result_one_in_history(self):
+        history_questions = ['question1']
+
+        question = self.service.get_question(history_questions)
+
+        self.assertEqual(question['context'], 'question2')
 
     def test_get_response_to_question_valid_answer_correct_response(self):
         text = 'response3'
