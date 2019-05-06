@@ -2,6 +2,7 @@ import os
 import json
 import random
 
+from unidecode import unidecode
 import gspread
 import redis
 from oauth2client.service_account import ServiceAccountCredentials
@@ -224,7 +225,7 @@ class QuestionService:
 
     def is_valid_answer(self, text, correct_response):
         return len(text) > self.MINIMUM_TEXT_CHARS_RESPONSE and \
-            text in correct_response.lower()
+            text in unidecode(correct_response).lower()
 
 
 class SpreadsheetReader:

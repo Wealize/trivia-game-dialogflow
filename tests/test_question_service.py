@@ -103,3 +103,11 @@ class QuestionServiceTestCase(unittest.TestCase):
         is_valid = self.service.is_valid_answer(text, correct_response)
 
         self.assertTrue(is_valid)
+
+    def test_is_valid_answer_text_correct_with_accents(self):
+        text = 'response3'
+        correct_response = 'Résponse3, Response4'
+
+        is_valid = self.service.is_valid_answer(text, correct_response)
+
+        self.assertTrue(is_valid)
