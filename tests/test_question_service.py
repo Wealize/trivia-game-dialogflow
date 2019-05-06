@@ -95,3 +95,11 @@ class QuestionServiceTestCase(unittest.TestCase):
         is_valid = self.service.is_valid_answer(text, correct_response)
 
         self.assertTrue(is_valid)
+
+    def test_is_valid_answer_text_correct_case_insensitive(self):
+        text = 'response3'
+        correct_response = 'Response3, Response4'
+
+        is_valid = self.service.is_valid_answer(text, correct_response)
+
+        self.assertTrue(is_valid)

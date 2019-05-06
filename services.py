@@ -224,7 +224,7 @@ class QuestionService:
 
     def is_valid_answer(self, text, correct_response):
         return len(text) > self.MINIMUM_TEXT_CHARS_RESPONSE and \
-            text in correct_response
+            text in correct_response.lower()
 
 
 class SpreadsheetReader:
