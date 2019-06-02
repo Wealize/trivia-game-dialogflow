@@ -25,6 +25,7 @@ sentry-sdk = {extras = ["flask"],version = "==0.7.14"}
 unidecode = "*"
 
 [dev-packages]
+codacy-coverage = "*"
 
 [requires]
 python_version = "3.7"

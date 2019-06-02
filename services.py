@@ -11,7 +11,7 @@ from slugify import slugify
 
 class QuestionStateService:
     CONTEXT_PATTERN = 'projects/{}/agent/sessions/{}/contexts/{}'
-    SOURCE = 'abc.theneonproject.org'
+    SOURCE = 'trivia.theneonproject.org'
 
     STATE_SEND_QUESTION = 'send_question'
     STATE_ANSWER_QUESTION = 'answer_question'

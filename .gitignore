@@ -1,7 +1,6 @@
 __pycache__/
 .vscode/
 creds.json
-spreadsheet-vocento.json
 node_modules
 *.pyc
 launch.sh
