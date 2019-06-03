@@ -1,8 +1,7 @@
 import os
 import json
 
-from flask import Flask, request, jsonify, g
-from slugify import slugify
+from flask import Flask, request, jsonify
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 

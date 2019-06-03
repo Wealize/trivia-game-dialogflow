@@ -1,8 +1,5 @@
 import os
 import unittest
-from unittest.mock import patch
-
-from werkzeug.exceptions import Unauthorized
 
 from middleware import is_token_valid
 

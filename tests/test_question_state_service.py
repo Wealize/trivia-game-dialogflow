@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import patch
-import os
 
 from services import QuestionStateService, QuestionService
 
