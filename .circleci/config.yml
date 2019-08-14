@@ -28,7 +28,7 @@ jobs:
       - run:
           name: run tests
           command: |
-            pipenv run python3 -m pytest services/tests/ --cov=. --cov-report xml:coverage.xml --disable-warnings
+            pipenv run python3 -m pytest tests/ --cov=. --cov-report xml:coverage.xml --disable-warnings
             pipenv run python-codacy-coverage -r coverage.xml
 
 workflows:
